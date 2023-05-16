@@ -89,31 +89,32 @@ class InputBox:
     def isMousePress(self):
         return pg.mouse.get_pressed()[0]
     
-    def get(self):
-        return self.text
 
 IStoPixel_x = 960/325 
 IStoPixel_y = 720/243.75 
 
 class Simulation:
-    def __init__(self,compress_length):
+    def __init__(self, compress_length, basket_distance):
+        self.compress_length = compress_length
+        self.basket_distance =basket_distance
         self.degree = 60
-        self.u = np.sqrt(((compress_length**2)*832.8/0.398)+(2*self.g*compress_length*np.sin(np.radians(self.degree))))
-        self.ux = self.u*np.cos(np.radians(self.degree))
-        self.uy = self.u*np.sin(np.radians(self.degree))
-        self.g = 9.806
+        self.g = -9.806
+        self.u = math.sqrt(((self.compress_length**2)*832.8/0.398)+(2*self.g*self.compress_length*math.sin(math.radians(self.degree))))
+        self.ux = self.u*math.cos(math.radians(self.degree))
+        self.uy = self.u*math.sin(math.radians(self.degree))
         self.time = 0
-        self.x_distance = 0
-        self.y_distance = 42
+        self.y_distance = -0.42
+        self.x_distance = (-(2*(self.u**2)*(math.cos(math.radians(self.degree))**2)*math.tan(math.radians(self.degree))) - math.sqrt(((2*(self.u**2)*(math.cos(math.radians(self.degree))**2)*math.tan(math.radians(self.degree)))**2)-(4*(self.g)*(2*(5.3**2)*(math.cos(math.radians(self.degree))**2)*(self.y_distance*-1)))))/(2*(self.g))
+        self.shooting_distance = self.x_distance - self.basket_distance -2
         self.Pos_x = 0
-        self.Pos_y =0
+        self.Pos_y = 0
         self.path = []
-       
+
 
 
 import sys
 import pygame as pg
-import numpy as np
+import math
 
 pg.init()
 run = True
@@ -125,11 +126,8 @@ COLOR_ACTIVE = pg.Color(28,134,238)     # ^^^
 FONT = pg.font.Font(None, 32)
 
 font = pg.font.Font('freesansbold.ttf', 26)
-text_Compress_length = font.render('compress_length', True, 'black', (255,255,255))
-
-
-
-compress_length = InputBox(100, 70, 140, 32)
+text_compress_length = font.render('compress_length', True, 'black', (255,255,255))
+text_basket_distance = font.render('basket_distance', True, 'black', (255,255,255))
 wall_50 = Button(100, 450, 200, 32)
 wall_50Press = False
 
@@ -139,7 +137,9 @@ wall_100Press = False
 summit = Button(100, 600, 200, 32)
 summitPress = False
 
-input_boxes = [compress_length]
+compress_length = InputBox(100, 70, 140, 32)
+basket_distance = InputBox(100, 140, 140, 32)
+input_boxes = [compress_length, basket_distance]
 run = True
 runSimulation = True
 
@@ -148,7 +148,8 @@ while(run):
     summit.draw(screen)
     wall_50.draw(screen)
     wall_100.draw(screen)
-    screen.blit(text_Compress_length, (100,40))
+    screen.blit(text_compress_length, (100,40))
+    screen.blit(text_basket_distance, (100,110))
     for box in input_boxes:
         box.update()
         box.draw(screen)
@@ -178,14 +179,33 @@ while(run):
         summit.colorButton = (0,255,0)
     if summitPress:
         screen.fill((255,255,255))
+        
+        simu = Simulation(float(compress_length.text), float(basket_distance.text))
         pg.draw.line(screen,(255,0,0),(win_x*80/325,720),(win_x*80/325,680),2)
         pg.draw.line(screen,(255,0,0),(win_x*280/325,720),(win_x*280/325,680),2)
         pg.draw.line(screen,(124,71,0),(win_x*180/325,720),(win_x*180/325,720-(100*720/243.75)),10)
+        screen.blit(text_compress_length, (100,40))
+        textnum_compress_length = font.render(str(simu.compress_length), True, 'black', (255,255,255))
+        screen.blit(textnum_compress_length, (500,40))
+
+        screen.blit(text_basket_distance, (100,110))
+        textnum_basket_distance = font.render(str(simu.basket_distance), True, 'black', (255,255,255))
+        screen.blit(textnum_basket_distance, (500,110))
+
+        text_x_distance = font.render('x_distance', True, 'black', (255,255,255))
+        screen.blit(text_x_distance, (100,180))
+        textnum_x_distance = font.render(str(simu.x_distance), True, 'black', (255,255,255))
+        screen.blit(textnum_x_distance, (500,180))
+
+        text_shooting_distance = font.render('shooting_distance', True, 'black', (255,255,255))
+        screen.blit(text_shooting_distance, (100,250))
+        textnum_shooting_distance = font.render(str(simu.shooting_distance), True, 'black', (255,255,255))
+        screen.blit(textnum_shooting_distance, (500,250))
         
 
     for event in pg.event.get():
         for box in input_boxes:
-            box.handle_event_num(event)
+            box.handle_event(event)
         if event.type == pg.QUIT:
             pg.quit()
             run = False
