@@ -88,10 +88,6 @@ class InputBox:
     
     def isMousePress(self):
         return pg.mouse.get_pressed()[0]
-    
-
-IStoPixel_x = 960/325 
-IStoPixel_y = 720/243.75 
 
 class Simulation:
     def __init__(self, compress_length, basket_distance):
@@ -110,6 +106,48 @@ class Simulation:
         self.Pos_y = 0
         self.path = []
 
+class Shooting:
+    def __init__(self,x=0,y=0,w=0,h=0,color=(0,0,0)):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.color = color
+    def draw(self,screen):
+        pg.draw.rect(screen,self.color,(self.x,self.y,self.w,self.h))
+
+class SquashBall:
+    def __init__(self, x=0, y=0.77, r=1, color=(0,0,0)):
+        self.x = x
+        self.y = y
+        self.r = r
+        self.color = color
+    def draw(self,screen):
+        pg.draw.circle(screen,self.color,(self.x,self.y),self.r)
+
+class Wall:
+    def __init__(self,x=0,y=0,w=0,h=0,color=(0,0,0)):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.color = color
+    def draw(self,screen):
+        pg.draw.rect(screen,self.color,(self.x,self.y,self.w,self.h))
+
+class Basket:
+    def __init__(self,x,y=0.35,w=0.13,h=0.35,color=(0,0,0)):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.color = color
+    def draw(self,screen):
+        pg.draw.rect(screen,self.color,(self.x,self.y,self.w,self.h))
+
+
+IStoPixel_x = 960/3.25 
+IStoPixel_y = 720/2.4375 
 
 
 import sys
@@ -121,6 +159,11 @@ run = True
 win_x, win_y = 960, 720
 screen = pg.display.set_mode((win_x,win_y))
 
+# ////////////////////////////////พื้นหลังข้อความ///////////////////////////////////////
+
+
+# //////////////////////////////////////////////////////////////////////////////////
+
 COLOR_INACTIVE = pg.Color(141,182,205) # ตั้งตัวแปรให้เก็บค่าสี เพื่อนำไปใช้เติมสีให้กับกล่องข้อความตอนที่คลิกที่กล่องนั้นๆอยู่
 COLOR_ACTIVE = pg.Color(28,134,238)     # ^^^
 FONT = pg.font.Font(None, 32)
@@ -128,6 +171,7 @@ FONT = pg.font.Font(None, 32)
 font = pg.font.Font('freesansbold.ttf', 26)
 text_compress_length = font.render('compress_length', True, 'black', (255,255,255))
 text_basket_distance = font.render('basket_distance', True, 'black', (255,255,255))
+
 wall_50 = Button(100, 450, 200, 32)
 wall_50Press = False
 
@@ -142,9 +186,10 @@ basket_distance = InputBox(100, 140, 140, 32)
 input_boxes = [compress_length, basket_distance]
 run = True
 runSimulation = True
+numrunsimu = 0
 
 while(run):
-    screen.fill((255,255,255))
+    screen.fill((219,219,219))
     summit.draw(screen)
     wall_50.draw(screen)
     wall_100.draw(screen)
@@ -179,11 +224,32 @@ while(run):
         summit.colorButton = (0,255,0)
     if summitPress:
         screen.fill((255,255,255))
-        
-        simu = Simulation(float(compress_length.text), float(basket_distance.text))
-        pg.draw.line(screen,(255,0,0),(win_x*80/325,720),(win_x*80/325,680),2)
-        pg.draw.line(screen,(255,0,0),(win_x*280/325,720),(win_x*280/325,680),2)
-        pg.draw.line(screen,(124,71,0),(win_x*180/325,720),(win_x*180/325,720-(100*720/243.75)),10)
+        if numrunsimu == 0:
+            simu = Simulation(float(compress_length.text)/100, float(basket_distance.text)/100)
+        pg.draw.line(screen,(255,0,0),(win_x*0.80/3.25,720),(win_x*0.80/3.25,720-(0.77*IStoPixel_y)),2)
+        pg.draw.line(screen,(255,0,0),(win_x*2.80/3.25,720),(win_x*2.80/3.25,680),2)
+        pg.draw.line(screen,(255,0,0),(win_x*(2.80+(0.25*math.sqrt(3)))/3.25,720),(win_x*(2.80+(0.25*math.sqrt(3)))/3.25,680),2)
+        simu_shooting = Shooting((win_x*0.80/3.25)-(0.40*IStoPixel_x)-(simu.shooting_distance*IStoPixel_x),720-(0.77*IStoPixel_y),0.40*IStoPixel_x,0.77*IStoPixel_y,(255,0,0))
+        simu_shooting.draw(screen)
+
+        simu_wall = Wall(win_x*1.78/3.25,win_y-(1*IStoPixel_y),win_x*0.02/3.25,(1*IStoPixel_y),(124,71,0))
+        simu_wall.draw(screen)
+
+        simu_basket = Basket((win_x*2.80/3.25)+(((float(basket_distance.text)/100)-0.065)*IStoPixel_x),720-(0.35*IStoPixel_y),0.13*IStoPixel_x,0.35*IStoPixel_y,(255,0,0))
+        simu_basket.draw(screen)
+        if numrunsimu == 0:
+            simu_squashBall = SquashBall(simu_shooting.x+(0.40*IStoPixel_x),720-(0.79*IStoPixel_y),0.02*IStoPixel_y,(255,0,0))
+
+        simu.path.append((simu_squashBall.x,simu_squashBall.y))
+        for i in simu.path:
+            pg.draw.circle(screen,(0,255,0),i,1)
+        simu_squashBall.draw(screen)
+
+        simu.uy = simu.uy + (simu.g*simu.time)
+        simu_squashBall.x += (simu.ux*simu.time)*IStoPixel_x
+        simu_squashBall.y -= ((simu.uy*simu.time)-(0.5*simu.g*(simu.time**2)))*IStoPixel_y
+        simu.time += 0.00001
+
         screen.blit(text_compress_length, (100,40))
         textnum_compress_length = font.render(str(simu.compress_length), True, 'black', (255,255,255))
         screen.blit(textnum_compress_length, (500,40))
@@ -201,6 +267,8 @@ while(run):
         screen.blit(text_shooting_distance, (100,250))
         textnum_shooting_distance = font.render(str(simu.shooting_distance), True, 'black', (255,255,255))
         screen.blit(textnum_shooting_distance, (500,250))
+        numrunsimu += 1
+
         
 
     for event in pg.event.get():
